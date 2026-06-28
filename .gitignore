@@ -1,0 +1,8 @@
+
+/build/
+/app/build/
+/.gradle/
+/temp_project/
+local.properties
+build_log.txt
+build_log_raw.txt
