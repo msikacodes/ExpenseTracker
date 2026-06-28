@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dollar Sign Icon (Centered) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24c-11.05,0 -20,8.95 -20,20s8.95,20 20,20s20,-8.95 20,-20s-8.95,-20 -20,-20zM55.5,54h-3v-3.09c-2.47,-0.18 -4.51,-1.54 -4.51,-4.14h2.25c0,1.23 1.02,2.02 2.25,2.02c1.37,0 2.25,-0.74 2.25,-1.82c0,-1.09 -0.8,-1.71 -2.84,-2.21c-2.31,-0.57 -4.66,-1.39 -4.66,-4.03c0,-2.32 1.87,-3.78 4.26,-4.06v-2.67h3v2.64c2.18,0.18 3.86,1.45 3.86,3.69h-2.25c0,-1.02 -0.82,-1.67 -1.61,-1.67c-1.11,0 -1.98,0.59 -1.98,1.67c0,1.02 0.82,1.52 2.84,2.02c2.47,0.61 4.66,1.48 4.66,4.18c0,2.39 -1.82,3.95 -4.26,4.28L55.5,54z" />
+
+    <!-- Dashboard Bars Below -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M34,76h8v-8h-8z" />
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M46,76h8v-14h-8z" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M58,76h8v-20h-8z" />
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M70,76h8v-12h-8z" />
+
+    <!-- Ground line -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,76h46v2h-46z" />
+</vector>
