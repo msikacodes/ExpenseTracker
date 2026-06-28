@@ -6,10 +6,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.msika.pesatrack"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.msika.pesatrack"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
