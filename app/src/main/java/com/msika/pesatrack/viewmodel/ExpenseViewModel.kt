@@ -91,12 +91,17 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val averagePerDay: StateFlow<Double> = combine(
         filteredExpenses, _selectedMonth, _selectedYear
     ) { expenses, month, year ->
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.YEAR, year)
-            set(Calendar.MONTH, month)
+        val now = Calendar.getInstance()
+        val isCurrentMonth = month == now.get(Calendar.MONTH) && year == now.get(Calendar.YEAR)
+        val divisor = if (isCurrentMonth) {
+            now.get(Calendar.DAY_OF_MONTH)
+        } else {
+            Calendar.getInstance().apply {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month)
+            }.getActualMaximum(Calendar.DAY_OF_MONTH)
         }
-        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-        if (daysInMonth > 0) expenses.sumOf { it.amount } / daysInMonth else 0.0
+        if (divisor > 0) expenses.sumOf { it.amount } / divisor else 0.0
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     // -- Filters --
