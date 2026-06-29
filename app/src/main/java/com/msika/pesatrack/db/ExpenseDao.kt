@@ -14,7 +14,7 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY date DESC")
     fun getAllExpenses(): Flow<List<Expense>>
 
-    @Query("SELECT * FROM expenses WHERE date >= :startTimestamp AND date <= :endTimestamp AND (:category IS NULL OR category = :category) AND (:query = '' OR description LIKE '%' || :query || '%') ORDER BY date DESC")
+    @Query("SELECT * FROM expenses WHERE date >= :startTimestamp AND date <= :endTimestamp AND (:category IS NULL OR category = :category) AND (:query = '' OR description LIKE '%' || :query || '%' OR CAST(amount AS TEXT) LIKE '%' || :query || '%') ORDER BY date DESC")
     fun getFilteredExpenses(
         startTimestamp: Long,
         endTimestamp: Long,

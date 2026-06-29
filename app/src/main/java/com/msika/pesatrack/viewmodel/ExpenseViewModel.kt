@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -41,9 +42,12 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val searchQuery: StateFlow<String> = _searchQuery
     val selectedCategory: StateFlow<Category?> = _selectedCategory
 
+    private val _debouncedQuery = _searchQuery.debounce(300L)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val filteredExpenses: StateFlow<List<Expense>> = combine(
-        _selectedMonth, _selectedYear, _searchQuery, _selectedCategory
+        _selectedMonth, _selectedYear, _debouncedQuery, _selectedCategory
     ) { month, year, query, category ->
         val startCal = Calendar.getInstance().apply {
             set(Calendar.YEAR, year)

@@ -24,6 +24,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,22 +74,65 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(strings.appName, fontWeight = FontWeight.Bold) },
+                title = {
+                    if (showSearch) {
+                        val focusRequester = remember { FocusRequester() }
+                        LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
+                            placeholder = {
+                                Text(strings.searchExpenses,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f))
+                            },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                                cursorColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                            textStyle = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                        )
+                    } else {
+                        Text(strings.appName, fontWeight = FontWeight.Bold)
+                    }
+                },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Rounded.Menu, contentDescription = strings.menu)
+                    if (showSearch) {
+                        IconButton(onClick = {
+                            showSearch = false
+                            viewModel.setSearchQuery("")
+                        }) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = strings.close)
+                        }
+                    } else {
+                        IconButton(onClick = onMenuClick) {
+                            Icon(Icons.Rounded.Menu, contentDescription = strings.menu)
+                        }
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showSearch = !showSearch }) {
-                        Icon(if (showSearch) Icons.Rounded.Close else Icons.Rounded.Search,
-                            contentDescription = strings.search)
-                    }
-                    IconButton(onClick = { showStats = !showStats }) {
-                        Icon(Icons.Rounded.BarChart, contentDescription = strings.statistics)
-                    }
-                    IconButton(onClick = onExportClick) {
-                        Icon(Icons.Rounded.Share, contentDescription = strings.export)
+                    if (showSearch) {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                Icon(Icons.Rounded.Close, contentDescription = strings.close)
+                            }
+                        }
+                    } else {
+                        IconButton(onClick = { showSearch = true }) {
+                            Icon(Icons.Rounded.Search, contentDescription = strings.search)
+                        }
+                        IconButton(onClick = { showStats = !showStats }) {
+                            Icon(Icons.Rounded.BarChart, contentDescription = strings.statistics)
+                        }
+                        IconButton(onClick = onExportClick) {
+                            Icon(Icons.Rounded.Share, contentDescription = strings.export)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -118,31 +163,6 @@ fun DashboardScreen(
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Search bar
-            if (showSearch) {
-                item {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { viewModel.setSearchQuery(it) },
-                        placeholder = { Text(strings.searchExpenses) },
-                        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                    Icon(Icons.Rounded.Close, contentDescription = strings.close)
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
-
             // Category filter chips
             item {
                 Row(
