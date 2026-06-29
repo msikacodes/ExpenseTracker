@@ -1,23 +1,30 @@
-﻿package com.msika.pesatrack
+package com.msika.pesatrack
 
-import android.app.KeyguardManager
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
@@ -25,6 +32,7 @@ import com.msika.pesatrack.data.Expense
 import com.msika.pesatrack.navigation.Destination
 import com.msika.pesatrack.ui.addexpense.AddExpenseBottomSheet
 import com.msika.pesatrack.ui.dashboard.DashboardScreen
+import com.msika.pesatrack.ui.settings.AppStrings
 import com.msika.pesatrack.ui.settings.EnglishStrings
 import com.msika.pesatrack.ui.settings.LocalAppStrings
 import com.msika.pesatrack.ui.settings.SettingsDrawer
@@ -56,6 +64,13 @@ class MainActivity : ComponentActivity() {
 
             var isUnlocked by remember { mutableStateOf(!biometricLock) }
             LaunchedEffect(biometricLock) { if (!biometricLock) isUnlocked = true }
+
+            // Lock automatically when app goes to background
+            if (biometricLock) {
+                LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+                    isUnlocked = false
+                }
+            }
 
             var showBottomSheet by remember { mutableStateOf(false) }
             var editingExpense by remember { mutableStateOf<Expense?>(null) }
@@ -180,59 +195,109 @@ fun AppContent(
 
 @Composable
 fun BiometricLockScreen(
-    strings: com.msika.pesatrack.ui.settings.AppStrings,
+    strings: AppStrings,
     onAuthenticated: () -> Unit
 ) {
     val context = LocalContext.current
-    val authLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            onAuthenticated()
+    val activity = context as? FragmentActivity
+    var authError by remember { mutableStateOf<String?>(null) }
+    var deviceNotSecured by remember { mutableStateOf(false) }
+
+    fun showPrompt() {
+        activity ?: return
+        val biometricManager = BiometricManager.from(context)
+        val canAuth = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+
+        if (canAuth == BiometricManager.BIOMETRIC_ERROR_NO_DEVICE_CREDENTIAL) {
+            deviceNotSecured = true
+            return
         }
+
+        val executor = ContextCompat.getMainExecutor(context)
+        val prompt = BiometricPrompt(
+            activity, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    authError = null
+                    onAuthenticated()
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    val dismissed = errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                            errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                            errorCode == BiometricPrompt.ERROR_CANCELED
+                    if (!dismissed) authError = errString.toString()
+                }
+                override fun onAuthenticationFailed() { /* prompt handles UI feedback */ }
+            }
+        )
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(strings.unlockApp)
+            .setSubtitle(strings.authenticateToContinue)
+            .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            .build()
+
+        prompt.authenticate(promptInfo)
     }
+
+    LaunchedEffect(Unit) { showPrompt() }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                Icons.Rounded.Lock,
+                imageVector = if (deviceNotSecured) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (deviceNotSecured) MaterialTheme.colorScheme.error
+                       else MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(24.dp))
-            Text(strings.unlockApp, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(
+                strings.unlockApp,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(8.dp))
-            Text(strings.authenticateToContinue, style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Spacer(Modifier.height(32.dp))
-            Button(
-                onClick = {
-                    val km = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                    if (km?.isDeviceSecure == true) {
-                        val intent = km.createConfirmDeviceCredentialIntent(
-                            strings.unlockApp,
-                            strings.authenticateToContinue
-                        )
-                        if (intent != null) {
-                            authLauncher.launch(intent)
-                            return@Button
-                        }
-                    }
-                    // Fallback: device not secured
-                    onAuthenticated()
+            if (deviceNotSecured) {
+                Text(
+                    strings.deviceNotSecured,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(32.dp))
+                Button(onClick = onAuthenticated) {
+                    Text(strings.continueAnyway)
                 }
-            ) {
-                Icon(Icons.Rounded.Fingerprint, contentDescription = null, modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(strings.authenticateToContinue)
+            } else {
+                Text(
+                    strings.authenticateToContinue,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                authError?.let { error ->
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Spacer(Modifier.height(32.dp))
+                Button(onClick = { showPrompt() }) {
+                    Icon(Icons.Rounded.Fingerprint, contentDescription = null,
+                        modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(strings.tryAgain)
+                }
             }
         }
     }

@@ -96,4 +96,7 @@ dependencies {
 
   // Coil (Image Loading)
   implementation(libs.coil.compose)
+
+  // Biometric
+  implementation(libs.androidx.biometric)
 }
