@@ -31,7 +31,7 @@ fun SettingsDrawer(
     strings: AppStrings
 ) {
     var showBudgetInput by remember { mutableStateOf(false) }
-    var budgetText by remember { mutableStateOf(if (monthlyBudget > 0) monthlyBudget.toLong().toString() else "") }
+    var budgetText by remember(monthlyBudget) { mutableStateOf(if (monthlyBudget > 0) monthlyBudget.toLong().toString() else "") }
 
     ModalDrawerSheet(
         modifier = Modifier.width(300.dp),
@@ -58,7 +58,7 @@ fun SettingsDrawer(
                 Column {
                     Text(strings.appName, style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold)
-                    Text("v1.0", style = MaterialTheme.typography.bodySmall,
+                    Text("v1.0.0", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                 }
             }
@@ -139,29 +139,14 @@ fun SettingsDrawer(
                             showBudgetInput = false
                         },
                         shape = RoundedCornerShape(12.dp)
-                    ) { Text("Set") }
-                }
-            }
-
-            // Export
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Rounded.FileDownload, contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(12.dp))
-                TextButton(onClick = onExport) {
-                    Text(strings.exportCSV)
+                    ) { Text(strings.set) }
                 }
             }
 
             // Biometric lock
             Row(
                 modifier = Modifier.fillMaxWidth()
-                    .padding(start = 20.dp, end = 24.dp),
+                    .padding(start = 24.dp, end = 24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Rounded.Fingerprint, contentDescription = null,
@@ -176,6 +161,27 @@ fun SettingsDrawer(
                     checked = biometricLock,
                     onCheckedChange = onBiometricLockChange
                 )
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            // -- Data --
+            Text(strings.data, style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Rounded.FileDownload, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                TextButton(onClick = onExport) {
+                    Text(strings.exportCSV)
+                }
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
